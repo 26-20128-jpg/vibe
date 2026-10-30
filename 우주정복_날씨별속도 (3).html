@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우주정복!</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;padding:18px;background:#03091f;color:white;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+.game{width:min(100%,440px);margin:0 auto;padding:10px;background:linear-gradient(145deg,#101d50,#030a23);border:1px solid #285dff;border-radius:16px;box-shadow:0 0 28px #103b9c55}
+h1{text-align:center;font-size:28px;margin:4px 0 12px;color:#9eeaff;text-shadow:0 0 14px #247aff}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.stat{background:#101c41;border-radius:9px;padding:7px;text-align:center;overflow:hidden}
+.stat span{display:block;font-size:12px;opacity:.8}.stat strong{font-size:19px;white-space:nowrap}
+canvas{display:block;width:100%;height:auto;border:1px solid #284fff;border-radius:10px;touch-action:none}
+#message{text-align:center;font-weight:700;color:#8feaff;min-height:25px;margin:12px 0}
+.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+button{cursor:pointer;padding:10px 7px;border:1px solid #4b78ff;border-radius:10px;background:linear-gradient(135deg,#1769ff,#4837d8);color:white;font-size:14px;font-weight:700}
+button.secondary{background:#142653}.arrows{display:flex;justify-content:center;gap:20px;margin-top:10px}.arrows button{min-width:70px}
+.help{text-align:center;font-size:12px;opacity:.75;margin:12px 0 2px}
+</style>
+</head>
+<body>
+<main class="game">
+<h1>🚀 우주정복!</h1>
+<div class="stats">
+<div class="stat"><span>점수</span><strong id="score">0</strong><div id="weather" style="font-size:11px;line-height:1.25;color:#9eeaff;margin-top:3px">오늘 서울 날씨 불러오는 중…</div></div>
+<div class="stat"><span>목숨</span><strong id="lives">♥ ♥ ♥ ♥ ♥</strong></div>
+<div class="stat"><span>레벨</span><strong id="level">1 / 5</strong></div>
+</div>
+<canvas id="board" width="400" height="500" aria-label="별똥별 공으로 외계인을 깨는 게임"></canvas>
+<div id="message" aria-live="polite">게임 시작을 눌러 외계인을 물리쳐 봐!</div>
+<div id="weather-rule" aria-live="polite" style="text-align:center;font-size:13px;font-weight:700;color:#ffe99a;margin:-5px 0 10px;min-height:20px">날씨에 따른 공 속도를 확인하는 중…</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin:0 0 12px;padding:10px;border:1px solid #344b82;border-radius:12px;background:#101a36">
+  <label for="test-temperature" style="font-size:13px;color:#dce8ff">🧪 테스트 기온 (°C)</label>
+  <input id="test-temperature" type="number" min="-50" max="60" step="0.5" value="20" style="width:82px;padding:8px;border-radius:8px;border:1px solid #7186bd;background:#081126;color:#fff;font-size:15px">
+  <button id="apply-temperature" class="secondary" type="button">기온 적용</button>
+  <div style="width:100%;font-size:11px;color:#a9bce9;text-align:center">25°C 이상: 빠르게 · 10°C 미만: 느리게 · 그 외: 기본 속도</div>
+</div>
+<div class="controls">
+<button id="start">▶ 게임 시작</button>
+<button id="pause" class="secondary">Ⅱ 일시정지</button>
+<button id="reset" class="secondary">↻ 처음부터</button>
+</div>
+<div class="arrows"><button id="left" class="secondary" aria-label="왼쪽 이동">◀</button><button id="right" class="secondary" aria-label="오른쪽 이동">▶</button></div>
+<div class="help">키보드 ← → · 마우스 · 화면 터치로 이동 · 스페이스바로 일시정지</div>
+</main>
+<script>
+(() => {
+const canvas=document.getElementById('board'),ctx=canvas.getContext('2d'),W=400,H=500;
+const $=id=>document.getElementById(id);
+let score=0,lives=5,level=1,bricks=[],stars=[],particles=[],trail=[],running=false,paused=false,ended=false,won=false,tick=0,last=0;
+const paddle={x:160,y:464,w:80,h:10},ball={x:200,y:450,vx:3.4,vy:-5.1,r:8};
+const colors=['#62ffbb','#b78aff','#ff6eac','#ffcb56','#63d9ff','#a6ff5e'];
+const rand=(a,b)=>Math.random()*(b-a)+a;
+function message(s){$('message').textContent=s}
+let weatherSpeedMultiplier=1;
+let weatherRuleMessage='날씨 정보를 불러오지 못해 기본 속도로 시작해요.';
+let weatherReady=false;
+let manualTemperatureOverride=false;
+function showWeatherRule(){ $('weather-rule').textContent=weatherRuleMessage; }
+async function loadSeoulWeather(){
+ const el=$('weather');
+ try{
+  const url='https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m&timezone=Asia%2FSeoul';
+  const response=await fetch(url);
+  if(!response.ok) throw new Error('Weather request failed');
+  const data=await response.json();
+  if(manualTemperatureOverride) return;
+  const temperature=data && data.current && data.current.temperature_2m;
+  if(typeof temperature!=='number'||!Number.isFinite(temperature)) throw new Error('Temperature unavailable');
+  el.textContent='오늘 서울 '+Math.round(temperature)+'°C';
+  if(temperature>=25){weatherSpeedMultiplier=1.35;weatherRuleMessage='더워서 공이 빨라요!';}
+  else if(temperature<10){weatherSpeedMultiplier=0.75;weatherRuleMessage='추워서 공이 느려요';}
+  else{weatherSpeedMultiplier=1;weatherRuleMessage='딱 좋은 날씨!';}
+  weatherReady=true;
+  showWeatherRule();
+ }catch(error){
+  el.textContent='날씨 정보를 불러올 수 없어요';
+  weatherSpeedMultiplier=1;
+  weatherRuleMessage='날씨 정보를 불러올 수 없어 기본 속도로 시작해요.';
+  weatherReady=false;
+  showWeatherRule();
+ } 
+}
+function applyTemperature(temperature, isTest=false){
+ if(!Number.isFinite(temperature)||temperature < -50||temperature > 60){
+  message('기온은 -50°C부터 60°C 사이로 입력해 줘.');
+  return;
+ }
+ if(temperature>=25){weatherSpeedMultiplier=1.35;weatherRuleMessage='더워서 공이 빨라요!';}
+ else if(temperature<10){weatherSpeedMultiplier=0.75;weatherRuleMessage='추워서 공이 느려요!';}
+ else{weatherSpeedMultiplier=1;weatherRuleMessage='딱 좋은 날씨! 기본 속도예요.';}
+ if(isTest){
+  manualTemperatureOverride=true;
+  $('weather').textContent='테스트 기온 '+temperature+'°C';
+  weatherReady=true;
+  resetBall();
+  message('테스트 기온을 적용했어. 게임 시작을 눌러 확인해 봐!');
+ }
+ showWeatherRule();
+}
+function hud(){$('score').textContent=score;$('lives').textContent=lives?'♥ '.repeat(lives).trim():'0';$('level').textContent=level+' / 5'}
+function makeStars(){stars=Array.from({length:115},()=>({x:rand(0,W),y:rand(0,H),r:rand(.5,1.8),a:rand(.25,.95),p:rand(0,6)}))}
+function makeBricks(){bricks=[];const rows=3+level,cols=8,gap=7,bw=(W-24-gap*7)/8,bh=20;for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)bricks.push({x:12+c*(bw+gap),y:45+r*29,w:bw,h:bh,hp:level>=4&&r%3===0?2:1,color:colors[(r+c+level)%6]})}
+function resetBall(){ball.x=paddle.x+paddle.w/2;ball.y=paddle.y-14;ball.vx=(3.4+(level-1)*.25)*weatherSpeedMultiplier;ball.vy=(-5.1-(level-1)*.3)*weatherSpeedMultiplier}
+function burst(x,y,color){for(let i=0;i<13;i++){const a=Math.PI*2*i/13+rand(-.15,.15),s=rand(1,3.2);particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(13,24),max:24,color,r:rand(1,2.3)})}particles.push({x,y,ring:1,life:13,max:13,color})}
+function drawStar(x,y,r,ri,rot=0){ctx.beginPath();for(let i=0;i<10;i++){const a=rot+i*Math.PI/5,rr=i%2===0?r:ri,px=x+Math.cos(a)*rr,py=y+Math.sin(a)*rr;i?ctx.lineTo(px,py):ctx.moveTo(px,py)}ctx.closePath()}
+function alien(b){const{x,y,w,h,color}=b;ctx.save();ctx.shadowColor=color;ctx.shadowBlur=9;ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(x+w/2,y+h*.62,w*.43,h*.36,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(x+w*.28,y+h*.34);ctx.lineTo(x+w*.16,y+h*.03);ctx.lineTo(x+w*.42,y+h*.3);ctx.fill();ctx.beginPath();ctx.moveTo(x+w*.72,y+h*.34);ctx.lineTo(x+w*.84,y+h*.03);ctx.lineTo(x+w*.58,y+h*.3);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#07132e';for(const k of [.36,.64]){ctx.beginPath();ctx.ellipse(x+w*k,y+h*.56,w*.105,h*.13,0,0,Math.PI*2);ctx.fill()}ctx.fillStyle='white';for(const k of [.38,.66]){ctx.beginPath();ctx.arc(x+w*k,y+h*.53,1.5,0,Math.PI*2);ctx.fill()}ctx.strokeStyle='#efffff';ctx.beginPath();ctx.moveTo(x+w*.39,y+h*.78);ctx.quadraticCurveTo(x+w*.5,y+h*.86,x+w*.61,y+h*.78);ctx.stroke();if(b.hp>1){ctx.fillStyle='#fff1a0';ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText('2',x+w/2,y+h+1)}ctx.restore()}
+function draw(){
+ ctx.clearRect(0,0,W,H);const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#08143b');bg.addColorStop(.55,'#040b28');bg.addColorStop(1,'#11144b');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ stars.forEach((s,i)=>{ctx.globalAlpha=s.a*(.72+.28*Math.sin(tick*.035+s.p));ctx.fillStyle=i%8===0?'#9befff':'white';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill()});ctx.globalAlpha=1;
+ const neb=ctx.createRadialGradient(110,360,5,110,360,160);neb.addColorStop(0,'rgba(47,45,180,.18)');neb.addColorStop(1,'rgba(5,10,40,0)');ctx.fillStyle=neb;ctx.fillRect(0,200,W,300);
+ bricks.forEach(alien);
+ ctx.save();ctx.shadowColor='#21aaff';ctx.shadowBlur=17;const pg=ctx.createLinearGradient(0,paddle.y,0,paddle.y+10);pg.addColorStop(0,'#d6ffff');pg.addColorStop(.4,'#38d7ff');pg.addColorStop(1,'#2455ff');ctx.fillStyle=pg;ctx.beginPath();ctx.roundRect(paddle.x,paddle.y,paddle.w,paddle.h,5);ctx.fill();ctx.restore();
+ trail.forEach((p,i)=>{ctx.save();ctx.globalAlpha=Math.max(0,p.life/13)*(i/trail.length)*.55;ctx.fillStyle='#25bfff';ctx.shadowColor='#28baff';ctx.shadowBlur=10;ctx.beginPath();ctx.arc(p.x,p.y,Math.max(1,2.5*i/trail.length),0,Math.PI*2);ctx.fill();ctx.restore()});
+ ctx.save();ctx.translate(ball.x,ball.y);ctx.rotate(tick*.045);ctx.shadowColor='#32baff';ctx.shadowBlur=20;const grad=ctx.createRadialGradient(-2,-3,1,0,0,12);grad.addColorStop(0,'white');grad.addColorStop(.35,'#baf5ff');grad.addColorStop(.7,'#31c8ff');grad.addColorStop(1,'#1759ff');ctx.fillStyle=grad;drawStar(0,0,11,5);ctx.fill();ctx.strokeStyle='#d6ffff';ctx.stroke();ctx.restore();
+ particles.forEach(p=>{ctx.save();ctx.globalAlpha=Math.max(0,p.life/p.max);if(p.ring){ctx.strokeStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(p.x,p.y,(1-p.life/p.max)*17+3,0,Math.PI*2);ctx.stroke()}else{ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=8;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}ctx.restore()});
+ if(ended){ctx.fillStyle='rgba(1,5,24,.8)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.shadowColor=won?'#35d9ff':'#ff4e9c';ctx.shadowBlur=24;ctx.fillStyle=won?'#fff29a':'#ff9bd2';ctx.font='bold 27px sans-serif';ctx.fillText(won?'★ 우주정복 성공! ★':'미션 실패',W/2,210);ctx.shadowBlur=8;ctx.fillStyle=won?'#b9f5ff':'white';ctx.font='bold 16px sans-serif';ctx.fillText(won?'모든 외계인을 물리쳤어요!':'점수: '+score,W/2,247);if(won){ctx.font='14px sans-serif';ctx.fillStyle='white';ctx.fillText('최종 점수: '+score,W/2,279)}ctx.shadowBlur=0;ctx.fillStyle='#b8d8ff';ctx.font='14px sans-serif';ctx.fillText('「처음부터」를 눌러 다시 도전!',W/2,310)}
+ else if(paused){ctx.fillStyle='rgba(1,5,24,.65)';ctx.fillRect(0,0,W,H);ctx.textAlign='center';ctx.fillStyle='white';ctx.font='bold 28px sans-serif';ctx.fillText('일시정지',W/2,H/2)}
+}
+function reset(){score=0;lives=5;level=1;particles=[];trail=[];running=false;paused=false;ended=false;won=false;paddle.x=160;makeBricks();resetBall();hud();message('게임 시작을 눌러 외계인을 물리쳐 봐!');draw()}
+function update(){
+ tick++;particles.forEach(p=>{p.life--;if(!p.ring){p.x+=p.vx;p.y+=p.vy;p.vx*=.98;p.vy*=.98}});particles=particles.filter(p=>p.life>0);trail.forEach(p=>p.life--);trail=trail.filter(p=>p.life>0);
+ if(!running||paused||ended){draw();return}
+ trail.push({x:ball.x,y:ball.y,life:13});if(trail.length>14)trail.shift();
+ ball.x+=ball.vx;ball.y+=ball.vy;
+ if(ball.x<ball.r){ball.x=ball.r;ball.vx=Math.abs(ball.vx)}if(ball.x>W-ball.r){ball.x=W-ball.r;ball.vx=-Math.abs(ball.vx)}if(ball.y<ball.r){ball.y=ball.r;ball.vy=Math.abs(ball.vy)}
+ if(ball.vy>0&&ball.y+ball.r>=paddle.y&&ball.y-ball.r<=paddle.y+10&&ball.x>=paddle.x&&ball.x<=paddle.x+paddle.w){ball.y=paddle.y-ball.r;const hit=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2);ball.vx=hit*6.1*weatherSpeedMultiplier;ball.vy=-Math.sqrt(Math.max(55*weatherSpeedMultiplier*weatherSpeedMultiplier,ball.vx*ball.vx+(-5.1*weatherSpeedMultiplier)*(-5.1*weatherSpeedMultiplier)));burst(ball.x,ball.y,'#6ceaff')}
+ for(let i=bricks.length-1;i>=0;i--){const b=bricks[i];if(ball.x+ball.r>b.x&&ball.x-ball.r<b.x+b.w&&ball.y+ball.r>b.y&&ball.y-ball.r<b.y+b.h){const ox=Math.min(ball.x+ball.r-b.x,b.x+b.w-(ball.x-ball.r)),oy=Math.min(ball.y+ball.r-b.y,b.y+b.h-(ball.y-ball.r));if(ox<oy)ball.vx*=-1;else ball.vy*=-1;b.hp--;score+=b.hp===0?10:3;burst(ball.x,ball.y,b.color);if(b.hp<=0)bricks.splice(i,1);hud();break}}
+ if(ball.y>H+15){lives--;hud();trail=[];if(lives<=0){running=false;ended=true;won=false;message('미션 실패! 다시 도전해 봐.')}else{resetBall();running=false;message('공을 놓쳤어! 게임 시작을 눌러 계속해.')}}
+ if(bricks.length===0){if(level===5){running=false;ended=true;won=true;message('🏆 우주정복 성공! 모든 외계인을 물리쳤어!')}else{level++;makeBricks();resetBall();running=false;hud();message('레벨 '+level+' 성공! 게임 시작을 눌러 다음 레벨로!')}}
+ draw()
+}
+function frame(t){if(t-last>16){update();last=t}requestAnimationFrame(frame)}
+function moveCenter(x){paddle.x=Math.max(0,Math.min(W-paddle.w,x-paddle.w/2));if(!running&&!ended&&!paused)ball.x=paddle.x+paddle.w/2}
+function moveBy(dx){paddle.x=Math.max(0,Math.min(W-paddle.w,paddle.x+dx));if(!running&&!ended)ball.x=paddle.x+paddle.w/2}
+function start(){if(ended)return;if(!weatherReady && $('weather').textContent.includes('불러오는 중')){message('서울 날씨를 확인하고 있어. 잠시만 기다려 줘!');return}paused=false;running=true;message('외계인을 향해 별똥별을 날려 봐!');showWeatherRule()}
+canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();moveCenter((e.clientX-r.left)*W/r.width)});
+canvas.addEventListener('pointerdown',e=>{const r=canvas.getBoundingClientRect();moveCenter((e.clientX-r.left)*W/r.width);if(!running&&!ended&&!paused)start()});
+$('apply-temperature').onclick=()=>{const value=Number($('test-temperature').value);if($('test-temperature').value.trim()===''){message('테스트할 기온을 입력해 줘.');return}applyTemperature(value,true)};$('start').onclick=start;$('pause').onclick=()=>{if(ended)return;if(!running&&!paused){message('게임 시작을 먼저 눌러 줘!');return}paused=!paused;message(paused?'일시정지 중':'계속 플레이해 봐!');draw()};$('reset').onclick=reset;
+$('left').addEventListener('pointerdown',e=>{e.preventDefault();moveBy(-22)});$('right').addEventListener('pointerdown',e=>{e.preventDefault();moveBy(22)});
+document.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft')moveBy(-12);if(e.key==='ArrowRight')moveBy(12);if(e.key===' '&&!ended){paused=!paused;if(paused)message('일시정지 중');else if(!running)start()}});
+makeStars();reset();showWeatherRule();loadSeoulWeather();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
