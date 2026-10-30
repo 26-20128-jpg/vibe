@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#f7f8f4">
+<title>my day — 나의 하루</title>
+<style>
+:root{--bg:#f7f8f4;--ink:#26352d;--muted:#7d897f;--accent:#789b7d;--paper:#fff;--line:#e7ebe4;--soft:#edf2eb;--shadow:0 12px 35px #24352512}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-rounded,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;transition:.25s}
+body[data-theme="black"]{--bg:#171a18;--ink:#f1f3ef;--muted:#a0aaa2;--paper:#232925;--line:#39433c;--soft:#303b33;--accent:#9ab89d;--shadow:0 12px 35px #0005}
+body[data-theme="green"]{--bg:#edf4eb;--ink:#294331;--paper:#fff;--line:#dce8da;--soft:#e1eee0;--accent:#5e9568}
+body[data-theme="blue"]{--bg:#edf3fa;--ink:#293c55;--paper:#fff;--line:#dce6f1;--soft:#e3edf8;--accent:#648bb8}
+header{height:76px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,5vw,64px);border-bottom:1px solid var(--line);background:var(--paper)}
+.logo{font-family:Georgia,serif;font-size:29px;letter-spacing:-1.5px;font-weight:bold}.logo span{color:var(--accent)}.top-right{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px}
+.theme-select{border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:10px 13px;border-radius:12px;font:inherit}
+main{max-width:1180px;margin:34px auto;padding:0 22px 60px;display:grid;grid-template-columns:340px minmax(0,1fr);gap:26px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
+.calendar{padding:23px}.monthbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}.monthbar h2{font-size:19px;margin:0}.arrows{display:flex;gap:7px}.iconbtn{width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);cursor:pointer;font-size:17px}
+.week,.days{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;gap:5px}.week{font-size:11px;color:var(--muted);margin-bottom:8px}.day{aspect-ratio:1;border:0;border-radius:12px;background:transparent;color:var(--ink);cursor:pointer;position:relative;font:inherit;font-size:13px}.day:hover{background:var(--soft)}.day.muted{color:#aeb7af}.day.selected{background:var(--accent);color:white;font-weight:700}.day.today:not(.selected):after{content:"";position:absolute;width:4px;height:4px;background:var(--accent);border-radius:50%;bottom:5px;left:calc(50% - 2px)}.day.has-entry:before{content:"";position:absolute;width:4px;height:4px;background:#e5a36f;border-radius:50%;top:5px;left:calc(50% - 2px)}
+.calendar-note{margin-top:20px;padding:14px;background:var(--soft);border-radius:14px;color:var(--muted);font-size:12px;line-height:1.6}
+.workspace{padding:26px;min-height:620px}.date-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:22px}.eyebrow{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1.5px}.date-heading h1{font-size:25px;margin:5px 0 0}.add-btn{background:var(--accent);color:white;border:0;border-radius:13px;padding:12px 17px;font-weight:700;cursor:pointer;white-space:nowrap}.empty{min-height:430px;border:1.5px dashed var(--line);border-radius:18px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);padding:25px}.empty .emoji{font-size:40px;margin-bottom:12px}.empty h3{color:var(--ink);margin:0 0 8px}.empty p{font-size:13px;line-height:1.6;margin:0}
+.editor{display:none}.editor.active{display:block}.toolbar{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--soft);border-radius:14px;margin-bottom:13px}.tool{border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:8px 11px;border-radius:9px;cursor:pointer;font-size:12px}.tool:hover{border-color:var(--accent)}.title-input{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font-size:21px;font-weight:700;padding:12px 4px;outline:none;margin-bottom:10px}.note{min-height:310px;padding:17px 5px;outline:none;line-height:1.9;font-size:15px;overflow-wrap:anywhere}.note:empty:before{content:"오늘의 이야기를 자유롭게 적어보세요…";color:var(--muted)}.note img{max-width:100%;height:auto}.sticker{font-size:28px;display:inline-block;padding:2px 5px}.editor-foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:14px;color:var(--muted);font-size:12px}.save-btn{background:var(--ink);color:var(--paper);border:0;border-radius:10px;padding:10px 17px;cursor:pointer}.entries{margin-top:20px}.entry-item{border-top:1px solid var(--line);padding:14px 2px;cursor:pointer}.entry-item strong{display:block;font-size:14px;margin-bottom:4px}.entry-item span{font-size:12px;color:var(--muted)}
+
+.weather{margin-top:8px;color:var(--muted);font-size:13px;min-height:20px}.weather a{color:var(--accent);text-decoration:none;font-size:10px;margin-left:5px}.head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.book-toggle{border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:11px 13px;border-radius:13px;cursor:pointer;font-weight:650;font-size:12px}.sticker-label{font-size:11px;color:var(--muted);align-self:center;padding:0 4px}.sticker-palette{display:flex;gap:5px;flex-wrap:wrap}.sticker-pick{font-size:20px;line-height:1;border:1px solid var(--line);background:var(--paper);border-radius:9px;width:35px;height:35px;cursor:pointer;transition:transform .15s}.sticker-pick:hover{transform:scale(1.15);border-color:var(--accent)}.book-overlay{display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);padding:clamp(16px,4vw,42px);overflow:auto}.book-overlay.open{display:flex;flex-direction:column;animation:overlayFade .28s ease both}.book-top{display:flex;align-items:center;justify-content:space-between;max-width:1000px;width:100%;margin:0 auto 18px}.book-top h2{margin:4px 0;font-size:22px}.book-stage{display:flex;align-items:center;justify-content:center;gap:clamp(6px,2vw,24px);flex:1;min-height:350px}
+@keyframes overlayFade{from{opacity:0}to{opacity:1}}
+@keyframes bookUnfold{0%{opacity:.3;transform:perspective(1400px) rotateY(-88deg) scale(.88);transform-origin:left center}65%{opacity:1;transform:perspective(1400px) rotateY(9deg) scale(1.015);transform-origin:left center}100%{opacity:1;transform:perspective(1400px) rotateY(0) scale(1);transform-origin:left center}}
+.book-overlay.open .book-page{animation:bookUnfold .85s cubic-bezier(.2,.75,.2,1) both}
+.book-overlay.open .book-arrow{animation:overlayFade .55s ease both}
+.book-overlay.open .book-top{animation:overlayFade .45s ease both}.book{width:min(680px,78vw);height:min(72vh,650px);min-height:360px;perspective:1800px}.book-page{height:100%;width:100%;background:var(--paper);color:var(--ink);border-radius:5px 18px 18px 5px;box-shadow:12px 15px 45px #0002;transform-origin:left center;overflow:auto;position:relative;border-left:8px solid var(--soft);transition:transform .35s}.book-page:before{content:"";position:absolute;left:20px;top:0;bottom:0;border-left:1px solid var(--line)}.book-page-inner{padding:clamp(25px,5vw,55px) clamp(25px,6vw,65px);padding-left:clamp(38px,7vw,80px);line-height:1.9;overflow-wrap:anywhere}.book-page-inner h3{font-family:Georgia,serif;font-size:25px;margin:8px 0 20px}.book-page-inner .book-date{font-size:12px;color:var(--accent);letter-spacing:1px}.book-page-inner .book-body{font-size:14px;min-height:170px}.book-page-inner .book-body img{max-width:100%}.book-empty{text-align:center;padding-top:25%;color:var(--muted)}.book-arrow{width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:var(--paper);color:var(--ink);font-size:25px;cursor:pointer}.book-arrow:disabled{opacity:.3;cursor:default}.book-footer{display:flex;justify-content:space-between;max-width:680px;width:min(680px,78vw);margin:15px auto 0;color:var(--muted);font-size:12px}
+@media(max-width:760px){.date-heading{align-items:flex-start}.head-actions{flex-direction:column;align-items:stretch}.book-toggle{padding:9px 10px}.sticker-label{width:100%}.book{width:76vw;height:65vh;min-height:330px}.book-arrow{width:34px;height:34px}.book-footer{width:76vw}.book-page-inner h3{font-size:20px}}
+\n@media(max-width:760px){header{height:66px;padding:0 16px}.logo{font-size:25px}.top-right .hint{display:none}main{display:flex;flex-direction:column;margin:18px auto;padding:0 13px 35px;gap:15px}.calendar{padding:17px}.workspace{padding:19px;min-height:520px}.date-heading h1{font-size:21px}.add-btn{padding:10px 12px;font-size:12px}.calendar-note{display:none}.empty{min-height:330px}.note{min-height:280px}}
+</style>
+</head>
+<body data-theme="white">
+<header><div class="logo">my <span>day.</span></div><div class="top-right"><span class="hint">오늘을 기록하고, 나만의 페이지로 꾸며보세요</span><select class="theme-select" id="theme" aria-label="배경 색상 선택"><option value="white">🤍 화이트</option><option value="black">🖤 블랙</option><option value="green">💚 그린</option><option value="blue">💙 블루</option></select></div></header>
+<main>
+<section class="panel calendar">
+ <div class="monthbar"><h2 id="monthLabel"></h2><div class="arrows"><button class="iconbtn" id="prev" aria-label="이전 달">‹</button><button class="iconbtn" id="next" aria-label="다음 달">›</button></div></div>
+ <div class="week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div class="days" id="days"></div>
+ <div class="calendar-note">✦ 날짜를 선택하고 <b>일기장 추가하기</b>를 눌러보세요.<br>기록이 있는 날에는 작은 점이 표시돼요.</div>
+</section>
+<section class="panel workspace">
+ <div class="date-heading"><div><div class="eyebrow">A LITTLE NOTE OF TODAY</div><h1 id="selectedLabel"></h1><div id="weather" class="weather">날씨 불러오는 중…</div></div><div class="head-actions"><button class="book-toggle" id="bookToggle" type="button">📚 캘린더 노트로 보기</button><button class="add-btn" id="add">＋ 일기장 추가하기</button></div></div>
+ <div class="empty" id="empty"><div><div class="emoji">📖</div><h3>오늘은 어떤 하루였나요?</h3><p>기억하고 싶은 순간을 한 페이지에 담아보세요.<br>글과 스티커로 나만의 다이어리를 만들 수 있어요.</p></div></div>
+ <div class="editor" id="editor">
+  <div class="toolbar">
+   <button class="tool" data-action="bold"><b>B</b> 굵게</button><button class="tool" data-action="italic"><i>I</i> 기울임</button><button class="tool" data-action="insertUnorderedList">☷ 목록</button>
+   <button class="tool" id="textColor">🎨 글자 색</button><span class="sticker-label">스티커를 누르면 바로 붙어요</span><div class="sticker-palette" id="stickerPalette"></div>
+  </div>
+  <input class="title-input" id="entryTitle" placeholder="오늘의 제목을 적어보세요">
+  <div class="note" id="note" contenteditable="true" spellcheck="true"></div>
+  <div class="editor-foot"><span id="saveStatus">나만의 페이지를 꾸며보세요</span><button class="save-btn" id="save">저장하기 ✓</button></div>
+ </div>
+ <div class="entries" id="entries"></div>
+</section>
+</main>
+
+<div class="book-overlay" id="bookOverlay" aria-hidden="true">
+  <div class="book-top">
+    <div><span class="eyebrow">MY DAY · DIARY BOOK</span><h2>나의 하루 모아보기</h2></div>
+    <button class="iconbtn" id="closeBook" aria-label="닫기" type="button">×</button>
+  </div>
+  <div class="book-stage">
+    <button class="book-arrow" id="bookPrev" aria-label="이전 페이지" type="button">‹</button>
+    <div class="book">
+      <div class="book-page" id="bookPage"><div class="book-page-inner" id="bookPageInner"></div></div>
+    </div>
+    <button class="book-arrow" id="bookNext" aria-label="다음 페이지" type="button">›</button>
+  </div>
+  <div class="book-footer"><span id="bookCount">0 / 0</span><span>화살표 또는 키보드 방향키로 페이지를 넘겨보세요</span></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), today=new Date();let view=new Date(today.getFullYear(),today.getMonth(),1), selected=new Date(today.getFullYear(),today.getMonth(),today.getDate()), entries=JSON.parse(localStorage.getItem('myday_entries')||'{}'), activeKey=null, weatherCache={}, bookItems=[], bookIndex=0, coords=null;
+const key=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const pretty=d=>`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${['일','월','화','수','목','금','토'][d.getDay()]}요일`;
+function render(){ $('#monthLabel').textContent=`${view.getFullYear()}년 ${view.getMonth()+1}월`;$('#selectedLabel').textContent=pretty(selected);let first=new Date(view.getFullYear(),view.getMonth(),1),start=new Date(first);start.setDate(1-first.getDay());let out='';for(let i=0;i<42;i++){let d=new Date(start);d.setDate(start.getDate()+i);let k=key(d),cls=['day'];if(d.getMonth()!==view.getMonth())cls.push('muted');if(k===key(selected))cls.push('selected');if(k===key(today))cls.push('today');if(entries[k])cls.push('has-entry');out+=`<button class="${cls.join(' ')}" data-date="${k}">${d.getDate()}</button>`}$('#days').innerHTML=out;document.querySelectorAll('.day').forEach(b=>b.onclick=()=>{let [y,m,d]=b.dataset.date.split('-').map(Number);selected=new Date(y,m-1,d);activeKey=null;render();showEntry();loadWeather()});renderEntryList();loadWeather()}
+function showEntry(){let k=key(selected),e=entries[k];if(e){$('#empty').style.display='none';$('#editor').classList.add('active');$('#entryTitle').value=e.title||'';$('#note').innerHTML=e.body||'';activeKey=k}else{$('#editor').classList.remove('active');$('#empty').style.display='flex';activeKey=null}}
+function renderEntryList(){let k=key(selected),e=entries[k];$('#entries').innerHTML=e?`<div class="entry-item" id="openEntry"><strong>📔 ${escapeHtml(e.title||'제목 없는 일기')}</strong><span>이 날짜에 저장된 나의 기록 · 눌러서 수정하기</span></div>`:'';let el=$('#openEntry');if(el)el.onclick=()=>showEntry()}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('#prev').onclick=()=>{view.setMonth(view.getMonth()-1);render()};$('#next').onclick=()=>{view.setMonth(view.getMonth()+1);render()};
+$('#add').onclick=()=>{let e=entries[key(selected)];$('#empty').style.display='none';$('#editor').classList.add('active');$('#entryTitle').value=e?.title||'';$('#note').innerHTML=e?.body||'';activeKey=key(selected);$('#saveStatus').textContent=e?'기존 일기를 수정하고 있어요':'새로운 페이지를 작성하고 있어요';$('#entryTitle').focus()};
+$('#save').onclick=()=>{let k=key(selected);entries[k]={...(entries[k]||{}),title:$('#entryTitle').value,body:$('#note').innerHTML,weather:weatherCache[k]||entries[k]?.weather||null};localStorage.setItem('myday_entries',JSON.stringify(entries));$('#saveStatus').textContent='방금 저장했어요 ✓';render();$('#editor').classList.add('active');$('#empty').style.display='none';activeKey=k};
+document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>{document.execCommand(b.dataset.action,false,null);$('#note').focus()});
+const stickerSet=['🌷','🌼','🌻','🌸','🪻','🍀','🌿','🌱','🌵','🍄','🦋','🐝','🐰','🐻','🐱','🐶','🧸','🐣','🐼','🦊','🐥','☁️','☀️','🌈','⭐','🌙','✨','💫','💖','💕','♡','💌','🎀','🧁','🍓','🍒','🍑','🍋','🍰','☕','🎧','📚','✏️','🖇️','🎨','🫧','🪞','🕯️','🧺','🎈','🎁','📮'];
+$('#stickerPalette').innerHTML=stickerSet.map((v,i)=>`<button class="sticker-pick" type="button" title="스티커 ${i+1}" aria-label="${v} 스티커">${v}</button>`).join('');
+document.querySelectorAll('.sticker-pick').forEach(b=>b.onclick=()=>{const sticker=document.createElement('span');sticker.className='sticker';sticker.textContent=b.textContent;sticker.contentEditable='false';$('#note').focus();const sel=window.getSelection();if(sel&&sel.rangeCount&&$('#note').contains(sel.anchorNode)){const r=sel.getRangeAt(0);r.deleteContents();r.insertNode(sticker);r.setStartAfter(sticker);r.collapse(true);sel.removeAllRanges();sel.addRange(r)}else $('#note').append(sticker);$('#note').append(document.createTextNode(' '))});
+$('#theme').onchange=e=>{document.body.dataset.theme=e.target.value;localStorage.setItem('myday_theme',e.target.value)};
+$('#theme').value=localStorage.getItem('myday_theme')||'white';document.body.dataset.theme=$('#theme').value;
+// Open-Meteo: browser location + daily forecast/archive; past dates use historical archive.
+const weatherText=code=>{if(code===0)return'맑음';if([1,2,3].includes(code))return'구름 조금/흐림';if([45,48].includes(code))return'안개';if([51,53,55,56,57].includes(code))return'이슬비';if([61,63,65,66,67,80,81,82].includes(code))return'비';if([71,73,75,77,85,86].includes(code))return'눈';if([95,96,99].includes(code))return'뇌우';return'날씨 정보'};
+const weatherEmoji=code=>{if(code===0)return'☀️';if([1,2].includes(code))return'🌤️';if(code===3)return'☁️';if([45,48].includes(code))return'🌫️';if([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(code))return'🌧️';if([71,73,75,77,85,86].includes(code))return'❄️';if([95,96,99].includes(code))return'⛈️';return'🌡️'};
+async function getWeatherCoords(){if(coords)return coords;coords=await new Promise((resolve,reject)=>{if(!navigator.geolocation)return reject(new Error('위치 권한을 사용할 수 없어요'));navigator.geolocation.getCurrentPosition(p=>resolve({lat:p.coords.latitude,lon:p.coords.longitude}),reject,{timeout:9000,maximumAge:3600000})});return coords}
+async function loadWeather(){const k=key(selected),target=$('#weather');if(weatherCache[k]){target.innerHTML=`${weatherCache[k].emoji} ${weatherCache[k].label} · ${weatherCache[k].temp}°C <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>`;return}if(entries[k]?.weather){let w=entries[k].weather;target.innerHTML=`${w.emoji} ${w.label} · ${w.temp}°C <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>`;return}target.textContent='📍 위치 기반 날씨 불러오는 중…';try{let c=await getWeatherCoords(),now=new Date(),delta=(new Date(k+'T12:00:00')-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/86400000;let base=(delta>=-2&&delta<=16)?'https://api.open-meteo.com/v1/forecast':'https://archive-api.open-meteo.com/v1/archive';let url=`${base}?latitude=${c.lat}&longitude=${c.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&start_date=${k}&end_date=${k}`;let res=await fetch(url);if(!res.ok)throw new Error('날씨 API 응답 오류');let data=await res.json();if(!data.daily?.time?.length)throw new Error('해당 날짜의 날씨 자료가 없어요');let code=data.daily.weather_code[0],max=data.daily.temperature_2m_max[0],min=data.daily.temperature_2m_min[0],w={emoji:weatherEmoji(code),label:weatherText(code),temp:`${Math.round(min)}~${Math.round(max)}`};weatherCache[k]=w;if(entries[k]){entries[k].weather=w;localStorage.setItem('myday_entries',JSON.stringify(entries))}target.innerHTML=`${w.emoji} ${w.label} · ${w.temp}°C <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>`}catch(e){target.textContent='🌤️ 날씨를 표시할 수 없어요 · 위치 권한을 확인해 주세요'}}
+$('#bookToggle').addEventListener('click',()=>{
+  // Build a chronological book, and always open directly on the currently selected date.
+  bookItems=Object.entries(entries).filter(([k,v])=>v).sort(([a],[b])=>a.localeCompare(b));
+  const selectedKey=key(selected);
+  let selectedIndex=bookItems.findIndex(([k])=>k===selectedKey);
+  if(selectedIndex<0){
+    bookItems.push([selectedKey,{title:'',body:'',weather:weatherCache[selectedKey]||null,__empty:true}]);
+    bookItems.sort(([a],[b])=>a.localeCompare(b));
+    selectedIndex=bookItems.findIndex(([k])=>k===selectedKey);
+  }
+  bookIndex=selectedIndex;
+  const overlay=$('#bookOverlay');
+  overlay.classList.remove('open');
+  // Reflow allows the unfolding animation to replay every time the book is opened.
+  void overlay.offsetWidth;
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden','false');
+  renderBook();
+});
+$('#closeBook').onclick=()=>{$('#bookOverlay').classList.remove('open');$('#bookOverlay').setAttribute('aria-hidden','true')};
+function renderBook(){let total=bookItems.length;$('#bookCount').textContent=total?`${bookIndex+1} / ${total}`:'0 / 0';$('#bookPrev').disabled=bookIndex<=0;$('#bookNext').disabled=bookIndex>=total-1;let inner=$('#bookPageInner');if(!total){inner.innerHTML='<div class="book-empty"><div style="font-size:44px">📚</div><h3>아직 기록이 없어요</h3><p>캘린더에서 첫 일기를 작성해보세요.</p></div>';return}let [k,e]=bookItems[bookIndex],d=new Date(k+'T12:00:00'),w=e.weather||weatherCache[k];inner.innerHTML=`<div class="book-date">${pretty(d)} ${w?`· ${w.emoji} ${w.label} ${w.temp}°C`:''}</div><h3>${escapeHtml(e.title||(e.__empty?'오늘의 페이지':'제목 없는 하루'))}</h3><div class="book-body">${e.body||(e.__empty?'<p style="color:var(--muted)">이 날짜에는 아직 일기가 없어요.<br>책을 닫고 캘린더에서 <b>일기장 추가하기</b>를 눌러 기록해보세요.</p>':'<p style="color:var(--muted)">기록된 내용이 없어요.</p>')}</div><div style="margin-top:35px;text-align:right;color:var(--muted);font:12px Georgia">— my day · ${bookIndex+1} —</div>`}
+function turnPage(dir){let next=bookIndex+dir;if(next<0||next>=bookItems.length)return;let page=$('#bookPage');page.style.transform=dir>0?'rotateY(-8deg)':'rotateY(8deg)';setTimeout(()=>{bookIndex=next;renderBook();page.style.transform='rotateY(0deg)'},160)}
+$('#bookPrev').onclick=()=>turnPage(-1);$('#bookNext').onclick=()=>turnPage(1);
+document.addEventListener('keydown',e=>{if(!$('#bookOverlay').classList.contains('open'))return;if(e.key==='Escape')$('#closeBook').click();if(e.key==='ArrowLeft')turnPage(-1);if(e.key==='ArrowRight')turnPage(1)});
+render();showEntry();loadWeather();
+</script>
+</body></html>
